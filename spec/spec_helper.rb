@@ -1,5 +1,5 @@
 $LOAD_PATH.unshift File.expand_path('../../lib', __FILE__)
-require 'bridge/pbn'
+require 'bridge/stats'
 require 'simplecov'
 
 RSpec.configure do |config|
