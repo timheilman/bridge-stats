@@ -2,12 +2,12 @@ GEM
   remote: https://rubygems.org/
   specs:
     bridge (0.1.0)
-    bridge-pbn (0.1.0)
     coderay (1.1.1)
     diff-lcs (1.2.5)
     docile (1.1.5)
     json (2.0.3)
     method_source (0.8.2)
+    portable_bridge_notation (0.1.0)
     pry (0.10.4)
       coderay (~> 1.1.0)
       method_source (~> 0.8.1)
@@ -38,7 +38,7 @@ PLATFORMS
 
 DEPENDENCIES
   bridge
-  bridge-pbn
+  portable_bridge_notation
   pry
   rb-readline
   rspec

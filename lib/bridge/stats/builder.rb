@@ -1,11 +1,11 @@
 require 'bridge'
-require 'bridge/pbn'
+require 'portable_bridge_notation'
 
 require_relative '../stats'
 
 class Bridge::Stats::Builder
   def initialize
     pp Bridge::Card.all[0]
-    pp Bridge::Pbn::IoParser.each_game_string nil
+    pp PortableBridgeNotation::IoParser.each_game_string nil
   end
 end
