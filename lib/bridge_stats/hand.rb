@@ -55,6 +55,14 @@ module BridgeStats
       end
     end
 
+    def total_points_long
+      hcp + long_points
+    end
+
+    def total_points_short(trump_suit)
+      hcp + short_points(trump_suit)
+    end
+
     def suit_length(suit)
       hand[suit].length
     end

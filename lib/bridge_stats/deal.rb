@@ -23,10 +23,10 @@ module BridgeStats
       end
     end
 
-    def total_points(declarer, trump_suit)
-      partner = partner(declarer)
-      deal[declarer].hcp + deal[declarer].long_points +
-        deal[partner].hcp + deal[partner].short_points(trump_suit)
+    def total_partnership_points(dir_with_long_trump, trump_suit)
+      partner = partner(dir_with_long_trump)
+      hand(dir_with_long_trump).total_points_long +
+        hand(partner).total_points_short(trump_suit)
     end
 
     def partner(dir)
