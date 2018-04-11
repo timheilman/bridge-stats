@@ -1,0 +1,40 @@
+[Event ""]
+[Site ""]
+[Date ""]
+[Board "26"]
+[West ""]
+[North ""]
+[East ""]
+[South ""]
+[Dealer "E"]
+[Vulnerable "All"]
+[Deal "E:K7.T987432.T4.J7 T83.AK6.K62.T654 AJ9652.QJ.753.92 Q4.5.AQJ98.AKQ83"]
+[Scoring ""]
+[Declarer ""]
+[Contract ""]
+[Result ""]
+[BCFlags "1f"]
+[DoubleDummyTricks "776bb776bb1671116711"]
+[Generator "BridgeComposer Version 5.50"]
+[OptimumScore "NS 600"]
+[OptimumResultTable "Declarer;Denomination\2R;Result\2R"]
+N NT  7
+N  S  7
+N  H  6
+N  D 11
+N  C 11
+S NT  7
+S  S  7
+S  H  6
+S  D 11
+S  C 11
+E NT  1
+E  S  6
+E  H  7
+E  D  1
+E  C  1
+W NT  1
+W  S  6
+W  H  7
+W  D  1
+W  C  1
