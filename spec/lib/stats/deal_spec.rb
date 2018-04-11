@@ -12,10 +12,10 @@ RSpec.describe BridgeStats::Deal do
       expect(deal_under_test.hcp(:ns)).to eq 28
     end
     it 'return the correct long point count for N' do
-      expect(deal_under_test.long_points(:n)).to eq 2
+      expect(deal_under_test.hand(:n).long_points).to eq 2
     end
     it 'return the correct short point count for S in clubs' do
-      expect(deal_under_test.short_points(:s, :c)).to eq 0
+      expect(deal_under_test.hand(:s).short_points(:c)).to eq 0
     end
     it 'return the correct total partnership point count for N decl in clubs' do
       expect(deal_under_test.total_points(:n, :c)).to eq 30
@@ -47,10 +47,10 @@ RSpec.describe BridgeStats::Deal do
       expect(deal_under_test.hcp(:ns)).to eq 20
     end
     it 'return the correct long point count for S' do
-      expect(deal_under_test.long_points(:s)).to eq 2
+      expect(deal_under_test.hand(:s).long_points).to eq 2
     end
     it 'return the correct short point count for N in clubs' do
-      expect(deal_under_test.short_points(:n, :c)).to eq 1
+      expect(deal_under_test.hand(:n).short_points(:c)).to eq 1
     end
     it 'return the correct total partnership point count for S decl in clubs' do
       # Zack's spreadsheet incorrectly counted short points in trump
