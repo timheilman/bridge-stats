@@ -8,23 +8,54 @@ module BridgeStats
       8.times do |file_num|
         file = File.open("#{file_name_prefix}#{file_num + 1}.pbn")
         importer = PortableBridgeNotation::Api::Importer.create(io: file)
-        # importer.import { |game| build_distribution(game) }
+        importer.import {|game| build_distribution(game)}
         pp "file #{file_num + 1} done"
       end
     end
 
-    def build_distribution(game)
-      opt_res_table = game.supplemental_sections[
-          :OptimumResultTable].section_string.split(/\n/)
-      dbl_dmy_tricks = game.supplemental_sections[
-          :DoubleDummyTricks].tag_value.split(//)
-      opt_res_table.each_with_index do |tbl_entry, index|
-        next unless index > 0
+    def five_c_is_best?(best_minimal_contracts)
+      best_minimal_contracts.include?('5c') && !best_minimal_contracts.include?('3nt')
+    end
 
-        tricks_from_ort = tbl_entry.split(/\s+/)[2].to_i(10)
-        tricks_from_ddt = dbl_dmy_tricks[index - 1].to_i(16)
-        pp(dbl_dmy_tricks, opt_res_table) if tricks_from_ort != tricks_from_ddt
-      end
+    def build_distribution(game)
+      ddt = DoubleDummyTricks.new(game.supplemental_sections[
+                                      :DoubleDummyTricks].tag_value)
+      deal = Deal.new(game.deal)
+      n_best_minimal_contracts = ddt.best_minimal_contracts(:n)
+      s_best_minimal_contracts = ddt.best_minimal_contracts(:s)
+      return unless five_c_is_best?(n_best_minimal_contracts) || five_c_is_best?(s_best_minimal_contracts)
+
+      # pseudocode: if only one of n and s make 5c, they are declarer.
+      # if both of n and s make 5c,
+      #   if their club length is unequal
+      #     whoever has longer clubs is declarer
+      #   otherwise
+      #     whoever has greater total points is declarer
+      n_clubs_length = deal.hand(:n).suit_length(:c)
+      s_clubs_length = deal.hand(:s).suit_length(:c)
+      n_total_points = deal.total_partnership_points(:n, :c)
+      s_total_points = deal.total_partnership_points(:s, :c)
+      declarer = if five_c_is_best?(n_best_minimal_contracts) && !five_c_is_best?(s_best_minimal_contracts)
+                   :n
+                 elsif five_c_is_best?(s_best_minimal_contracts) && !five_c_is_best?(n_best_minimal_contracts)
+                   :s
+                 elsif n_clubs_length > s_clubs_length
+                   :n
+                 elsif s_clubs_length > n_clubs_length
+                   :s
+                 elsif n_total_points >= s_total_points
+                   :n
+                 else
+                   :s
+                 end
+      total_points = deal.total_partnership_points(declarer, :c)
+      voids = deal.blankleton_count 0, :ns
+      singletons = deal.blankleton_count 1, :ns
+      doubletons = deal.blankleton_count 2, :ns
+      unstopped_suits = deal.unstopped_suit_count(:ns)
+      sixplussers = (6..13).inject(0) {|c, n| c + deal.blankleton_count(n, :ns)}
+      puts "#{game.board}\t#{deal.hcp(:ns)}\t#{total_points}\t" \
+             "#{deal.fit(:ns, :c)}\t#{voids}\t#{singletons}\t#{doubletons}\t#{unstopped_suits}\t#{sixplussers}\n"
     end
   end
 end
