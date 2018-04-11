@@ -1,3 +1,4 @@
+# Namespace module for computing statistics from PBN files
 module BridgeStats
   autoload :Builder, File.expand_path('../bridge_stats/builder', __FILE__)
   autoload :Deal, File.expand_path('../bridge_stats/deal', __FILE__)

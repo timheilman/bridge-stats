@@ -1,6 +1,14 @@
 module BridgeStats
+  # Represents a hand within a bridge game
   class Hand
     attr_reader :hand
+
+    @hcp_for_rank = { A: 4, K: 3, Q: 2, J: 1 }
+    @hcp_for_rank.default = 0
+
+    def self.hcp_for_rank(rank)
+      @hcp_for_rank[rank]
+    end
 
     def initialize(hand)
       @hand = hand
@@ -16,25 +24,14 @@ module BridgeStats
     def with_each_rank(ranks)
       return to_enum(:with_each_rank, ranks) unless block_given?
       ranks.split(//).each do |rank|
-        yield rank
+        yield rank.to_sym
       end
     end
 
     def hcp
       hand.inject(0) do |hcp, (_suit, ranks)|
         hcp + with_each_rank(ranks).inject(0) do |hcp_for_suit, rank|
-          case rank
-          when 'A'
-            hcp_for_suit + 4
-          when 'K'
-            hcp_for_suit + 3
-          when 'Q'
-            hcp_for_suit + 2
-          when 'J'
-            hcp_for_suit + 1
-          else
-            hcp_for_suit
-          end
+          hcp_for_suit + self.class.hcp_for_rank(rank)
         end
       end
     end
@@ -79,10 +76,7 @@ module BridgeStats
 
     def unstopped_suits
       with_each_suit.inject([]) do |unstopped_suits, (suit, ranks)|
-        if ranks.include?('A') ||
-           (ranks.include?('K') && ranks.length >= 2) ||
-           (ranks.include?('Q') && ranks.length >= 3) ||
-           (ranks.include?('J') && ranks.length >= 4)
+        if stopped(ranks)
           unstopped_suits
         else
           unstopped_suits << suit
@@ -90,5 +84,12 @@ module BridgeStats
       end
     end
 
+    # rubocop complains, but this is the most *readable* way to express it
+    def stopped(ranks)
+      ranks.include?('A') ||
+        (ranks.include?('K') && ranks.length >= 2) ||
+        (ranks.include?('Q') && ranks.length >= 3) ||
+        (ranks.include?('J') && ranks.length >= 4)
+    end
   end
 end

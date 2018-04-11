@@ -1,9 +1,10 @@
 module BridgeStats
+  # Represents the deal of hands for a bridge game
   class Deal
     attr_reader :deal
 
     def initialize(deal)
-      @deal = deal.collect { |dir, hand| [dir, Hand.new(hand) ]}.to_h
+      @deal = deal.collect { |dir, hand| [dir, Hand.new(hand)] }.to_h
     end
 
     def hand(dir)
@@ -59,6 +60,5 @@ module BridgeStats
         unstopped_suits & hand(dir).unstopped_suits
       end.length
     end
-
   end
 end
