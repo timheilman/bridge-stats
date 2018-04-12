@@ -68,7 +68,7 @@ RSpec.describe BridgeStats::Deal do
       end).to eq 1
     end
     it 'return the correct count of unstopped suits in NS' do
-      expect(deal_under_test.unstopped_suit_count(:ns)).to eq 0
+      expect(deal_under_test.unstopped_suit_count(:ns)).to eq 1 # i.e. Jxxx is not a stopper
     end
   end
 end

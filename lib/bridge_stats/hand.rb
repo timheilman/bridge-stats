@@ -86,10 +86,10 @@ module BridgeStats
 
     # rubocop complains, but this is the most *readable* way to express it
     def stopped(ranks)
-      ranks.include?('A') ||
-        (ranks.include?('K') && ranks.length >= 2) ||
-        (ranks.include?('Q') && ranks.length >= 3) ||
-        (ranks.include?('J') && ranks.length >= 4)
+      ranks.include?('A') || # full stopper
+        (ranks.include?('K') && ranks.length >= 2) || # potentially a half-stopper
+        (ranks.include?('Q') && ranks.length >= 3) # potentially a less-than-half stopper
+#       || (ranks.include?('J') && ranks.length >= 4) empirically not considered a stopper in Zack's analysis
     end
   end
 end

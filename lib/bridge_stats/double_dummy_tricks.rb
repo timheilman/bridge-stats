@@ -30,6 +30,8 @@ module BridgeStats
       end
     end
 
+    # returns the set of makeable contracts scoring the highest possible points while
+    # bid at the lowest possible level to earn those points
     def best_minimal_contracts(dir)
       with_each_strain(dir).inject([-350, []]) do |best_score_contracts_pair, (strain, tricks)|
         score = score_with_bonuses(strain, tricks)

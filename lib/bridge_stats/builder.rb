@@ -8,13 +8,17 @@ module BridgeStats
       8.times do |file_num|
         file = File.open("#{file_name_prefix}#{file_num + 1}.pbn")
         importer = PortableBridgeNotation::Api::Importer.create(io: file)
-        importer.import {|game| build_distribution(game)}
-        pp "file #{file_num + 1} done"
+        importer.import { |game| build_distribution(game) }
+        # pp "file #{file_num + 1} done"
       end
     end
 
     def five_c_is_best?(best_minimal_contracts)
       best_minimal_contracts.include?('5c') && !best_minimal_contracts.include?('3nt')
+    end
+
+    def contains_3nt_4major_or_slam?(best_minimal_contracts)
+      !(best_minimal_contracts & %w(3nt 4h 4s 6c 6d 6h 6s 6nt 7c 7d 7h 7s 7nt).to_set).empty?
     end
 
     def build_distribution(game)
@@ -24,6 +28,7 @@ module BridgeStats
       n_best_minimal_contracts = ddt.best_minimal_contracts(:n)
       s_best_minimal_contracts = ddt.best_minimal_contracts(:s)
       return unless five_c_is_best?(n_best_minimal_contracts) || five_c_is_best?(s_best_minimal_contracts)
+      return if contains_3nt_4major_or_slam?(n_best_minimal_contracts) || contains_3nt_4major_or_slam?(s_best_minimal_contracts)
 
       # pseudocode: if only one of n and s make 5c, they are declarer.
       # if both of n and s make 5c,
@@ -53,7 +58,7 @@ module BridgeStats
       singletons = deal.blankleton_count 1, :ns
       doubletons = deal.blankleton_count 2, :ns
       unstopped_suits = deal.unstopped_suit_count(:ns)
-      sixplussers = (6..13).inject(0) {|c, n| c + deal.blankleton_count(n, :ns)}
+      sixplussers = (6..13).inject(0) { |c, n| c + deal.blankleton_count(n, :ns) }
       puts "#{game.board}\t#{deal.hcp(:ns)}\t#{total_points}\t" \
              "#{deal.fit(:ns, :c)}\t#{voids}\t#{singletons}\t#{doubletons}\t#{unstopped_suits}\t#{sixplussers}\n"
     end
