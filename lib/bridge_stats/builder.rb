@@ -5,23 +5,44 @@ module BridgeStats
   class Builder
     attr_reader :player_satisfying
     attr_reader :partner_satisfying
+    attr_reader :count_writer
     attr_accessor :deal
     attr_accessor :ddt
     attr_accessor :game
+    attr_accessor :matching_boards
 
     def initialize
-      @player_satisfying = Hash.new { |h, k| h[k] = [] }
-      @partner_satisfying = Hash.new { |h, k| h[k] = [] }
-      file_name_prefix = '/Users/tim/BackedUpToMacMini/GTD/DIGITAL_REFERENCE/BRIDGE/20000_pbn_games/20000-'
+      @player_satisfying = Hash.new {|h, k| h[k] = []}
+      @partner_satisfying = Hash.new {|h, k| h[k] = []}
+      @matching_boards = ""
+      count_readers = []
+      pids = []
+      file_name_prefix = '/Users/tim/BackedUpToMacMini/GTD/DIGITAL_REFERENCE/BRIDGE/20000_pbn_games/fourways-20000-'
       puts "board\tsuit\tpoint count dir\thcp\ttotal points\t" \
              "fit\tspade fit\theart fit\teach partner is balanced?\tunstopped suits\tplayer best minimal contracts\t" \
              "partner best minimal contracts\n"
-      8.times do |file_num|
-        file = File.open("#{file_name_prefix}#{file_num + 1}.pbn")
-        importer = PortableBridgeNotation::Api::Importer.create(io: file)
-        importer.import {|game| build_distribution(game)}
-        # pp "file #{file_num + 1} done"
+      4.times do |file_num|
+        count_reader, @count_writer = IO.pipe
+        count_readers << count_reader
+        pids << fork do
+          count_reader.close
+          file = File.open("#{file_name_prefix}#{file_num + 1}.pbn")
+          importer = PortableBridgeNotation::Api::Importer.create(io: file)
+          importer.import {|game| build_distribution(game)}
+          exit!(0)
+        end
+        count_writer.close
       end
+      pids.each {|pid| Process.wait2(pid)}
+      count_readers.each do |count_reader|
+        while message = count_reader.gets
+          result = message.split(';')
+          puts result[0]
+          player_satisfying[result[1]] << result[2]
+          partner_satisfying[result[3]] << result[4]
+        end
+      end
+
       puts "\n\n\nPlayer (N or E) Satisfying Boards:"
       print_sat_boards player_satisfying
       puts "\n\n\nPartner (S or W) Satisfying Boards:"
@@ -41,8 +62,8 @@ module BridgeStats
 
     def print_sat_boards whom
       puts "count\tproportion\tbest minimal contract(s)\n"
-      total = whom.values.inject(0) { |ttl, list_of_boards| ttl + list_of_boards.length }
-      whom.sort_by { |_k, v| v.length }.reverse.each do |contracts, list_of_boards|
+      total = whom.values.inject(0) {|ttl, list_of_boards| ttl + list_of_boards.length}
+      whom.sort_by {|_k, v| v.length}.reverse.each do |contracts, list_of_boards|
         puts "#{list_of_boards.length}\t#{'%0.3f' % (list_of_boards.length / total.to_f)}\t#{contracts}\n"
       end
     end
@@ -76,11 +97,11 @@ module BridgeStats
 
       player_best_minimal_contracts = ddt.best_minimal_contracts(player).to_a.sort.join(',')
       partner_best_minimal_contracts = ddt.best_minimal_contracts(partner).to_a.sort.join(',')
-      puts "#{game.board}\t#{suit}\t#{point_count_dir}\t#{deal.hcp(partnership)}\t#{total_points}\t" \
+      count_writer.printf "#{game.board}\t#{suit}\t#{point_count_dir}\t#{deal.hcp(partnership)}\t#{total_points}\t" \
              "#{fit}\t#{spade_fit}\t#{heart_fit}\t#{partnership_balanced}\t#{unstopped_suits}\t#{player_best_minimal_contracts}\t" \
-             "#{partner_best_minimal_contracts}\n"
-      player_satisfying[player_best_minimal_contracts] << "#{game.board}_#{point_count_dir}_#{suit}"
-      partner_satisfying[partner_best_minimal_contracts] << "#{game.board}_#{point_count_dir}_#{suit}"
+             "#{partner_best_minimal_contracts};"
+      count_writer.printf "#{player_best_minimal_contracts};#{game.board}_#{point_count_dir}_#{suit};"
+      count_writer.printf "#{partner_best_minimal_contracts};#{game.board}_#{point_count_dir}_#{suit}\n"
     end
   end
 end
