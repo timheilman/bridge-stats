@@ -12,8 +12,8 @@ module BridgeStats
     attr_accessor :matching_boards
 
     def initialize
-      @player_satisfying = Hash.new {|h, k| h[k] = []}
-      @partner_satisfying = Hash.new {|h, k| h[k] = []}
+      @player_satisfying = Hash.new {|h, k| h[k] = 0}
+      @partner_satisfying = Hash.new {|h, k| h[k] = 0}
       @matching_boards = ""
       count_readers = []
       pids = []
@@ -36,10 +36,10 @@ module BridgeStats
       pids.each {|pid| Process.wait2(pid)}
       count_readers.each do |count_reader|
         while message = count_reader.gets
-          result = message.split(';')
+          result = message.chomp.split(';')
           puts result[0]
-          player_satisfying[result[1]] << result[2]
-          partner_satisfying[result[3]] << result[4]
+          player_satisfying[result[1]] += 1
+          partner_satisfying[result[2]] += 1
         end
       end
 
@@ -62,9 +62,9 @@ module BridgeStats
 
     def print_sat_boards whom
       puts "count\tproportion\tbest minimal contract(s)\n"
-      total = whom.values.inject(0) {|ttl, list_of_boards| ttl + list_of_boards.length}
-      whom.sort_by {|_k, v| v.length}.reverse.each do |contracts, list_of_boards|
-        puts "#{list_of_boards.length}\t#{'%0.3f' % (list_of_boards.length / total.to_f)}\t#{contracts}\n"
+      total = whom.values.inject(0) {|ttl, count_of_boards| ttl + count_of_boards}
+      whom.sort_by {|_k, v| v}.reverse.each do |contracts, count_of_boards|
+        puts "#{count_of_boards}\t#{'%0.3f' % (count_of_boards / total.to_f)}\t#{contracts}\n"
       end
     end
 
@@ -100,8 +100,8 @@ module BridgeStats
       count_writer.printf "#{game.board}\t#{suit}\t#{point_count_dir}\t#{deal.hcp(partnership)}\t#{total_points}\t" \
              "#{fit}\t#{spade_fit}\t#{heart_fit}\t#{partnership_balanced}\t#{unstopped_suits}\t#{player_best_minimal_contracts}\t" \
              "#{partner_best_minimal_contracts};"
-      count_writer.printf "#{player_best_minimal_contracts};#{game.board}_#{point_count_dir}_#{suit};"
-      count_writer.printf "#{partner_best_minimal_contracts};#{game.board}_#{point_count_dir}_#{suit}\n"
+      count_writer.printf "#{player_best_minimal_contracts};"
+      count_writer.printf "#{partner_best_minimal_contracts}\n"
     end
   end
 end
