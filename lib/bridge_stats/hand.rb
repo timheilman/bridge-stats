@@ -74,6 +74,10 @@ module BridgeStats
       end
     end
 
+    def balanced
+      blankleton_count(0).zero? && blankleton_count(1).zero? && blankleton_count(2) <= 1
+    end
+
     def unstopped_suits
       with_each_suit.inject([]) do |unstopped_suits, (suit, ranks)|
         if stopped(ranks)
