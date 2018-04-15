@@ -63,8 +63,15 @@ module BridgeStats
     def print_sat_boards whom
       puts "count\tproportion\tbest minimal contract(s)\n"
       total = whom.values.inject(0) {|ttl, count_of_boards| ttl + count_of_boards}
+      individual_chance_of_bestness = Hash.new {|h,k| h[k] = 0}
       whom.sort_by {|_k, v| v}.reverse.each do |contracts, count_of_boards|
-        puts "#{count_of_boards}\t#{'%0.3f' % (count_of_boards / total.to_f)}\t#{contracts}\n"
+        set_proportion = count_of_boards / total.to_f
+        puts "#{count_of_boards}\t#{'%0.3f' % set_proportion}\t#{contracts}\n"
+        contracts.split(',').each {|i| individual_chance_of_bestness[i] += set_proportion}
+      end
+      puts "\nindividual contract\tchance it is a best minimal contract"
+      individual_chance_of_bestness.sort_by {|_k, v| v}.reverse.each do |individual, chance|
+        puts "#{individual}\t#{'%0.3f' % chance}"
       end
     end
 
