@@ -24,11 +24,17 @@ module BridgeStats
       4.times do |file_num|
         count_reader, @count_writer = IO.pipe
         count_readers << count_reader
+        # outfile = File.new("#{file_name_prefix}#{file_num +1}.rbbinary", "w")
         pids << fork do
           count_reader.close
-          file = File.open("#{file_name_prefix}#{file_num + 1}.pbn")
-          importer = PortableBridgeNotation::Api::Importer.create(io: file)
-          importer.import {|game| build_distribution(game)}
+          file = File.open("#{file_name_prefix}#{file_num + 1}.rbbinary")
+          PortableBridgeNotation::Api::Importer.create(io: file)
+          # importer.import {|game| build_distribution(game)}
+          # importer.import {|game| Marshal.dump(game, outfile)}
+          # outfile.close()
+          until (file.eof?) do
+            build_distribution(Marshal.load(file))
+          end
           exit!(0)
         end
         count_writer.close
@@ -63,7 +69,7 @@ module BridgeStats
     def print_sat_boards whom
       puts "count\tproportion\tbest minimal contract(s)\n"
       total = whom.values.inject(0) {|ttl, count_of_boards| ttl + count_of_boards}
-      individual_chance_of_bestness = Hash.new {|h,k| h[k] = 0}
+      individual_chance_of_bestness = Hash.new {|h, k| h[k] = 0}
       whom.sort_by {|_k, v| v}.reverse.each do |contracts, count_of_boards|
         set_proportion = count_of_boards / total.to_f
         puts "#{count_of_boards}\t#{'%0.3f' % set_proportion}\t#{contracts}\n"
