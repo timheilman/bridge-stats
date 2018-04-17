@@ -22,9 +22,7 @@ module BridgeStats
       file_name_prefix = '/Users/tim/BackedUpToMacMini/GTD/DIGITAL_REFERENCE/BRIDGE/20000_pbn_games/fourways-20000-'
       parallelizer = Parallelizer.new(Array.new(4) { |n| File.open("#{file_name_prefix}#{n+1}.rbmarshal") },
                                       method(:forked_handle_file), method(:count_writer=))
-      parallelizer.run do |reader|
-        unforked_handle_pipe_reader(reader)
-      end
+      parallelizer.run(&method(:unforked_handle_pipe_reader))
 
       puts "\n\n\nPlayer (N or E) Satisfying Boards:"
       print_sat_boards player_satisfying

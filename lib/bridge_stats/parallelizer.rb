@@ -22,7 +22,7 @@ module BridgeStats
 
       fork_io_readings
       pids.each { |pid| Process.wait(pid) }
-      yield_read_pipes(&block)
+      yield_read_pipes(&block) if block_given?
     end
 
     private
@@ -40,7 +40,7 @@ module BridgeStats
     def fork_io_reading(io, read_pipe, write_pipe)
       pids << fork do
         read_pipe.close
-        write_pipe_receiver.call(write_pipe)
+        write_pipe_receiver.call(write_pipe) unless write_pipe_receiver.nil?
         # importer.import {|game| build_distribution(game)}
         # importer.import {|game| Marshal.dump(game, outfile)}
         # outfile.close()
