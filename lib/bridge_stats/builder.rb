@@ -1,16 +1,21 @@
 require 'portable_bridge_notation'
 require_relative 'parallelizer'
+require_relative 'thread_marshaller'
 require 'pp'
 module BridgeStats
   ## Build the joint empirical distribution
   class Builder
     attr_reader :player_satisfying
     attr_reader :partner_satisfying
-    attr_accessor :count_writer
+    attr_accessor :thread_marshaller
     attr_accessor :deal
     attr_accessor :ddt
     attr_accessor :game
     attr_accessor :matching_boards
+
+    attr_accessor :board, :suit, :point_count_dir, :partnership_hcp, :partnership_total_points,
+                  :fit, :spade_fit, :heart_fit, :is_partnership_balanced, :unstopped_suit_count,
+                  :player_best_minimal_contracts, :partner_best_minimal_contracts
 
     def initialize
       @player_satisfying = Hash.new { |h, k| h[k] = 0 }
@@ -30,6 +35,10 @@ module BridgeStats
       print_sat_boards partner_satisfying
     end
 
+    def count_writer=(io)
+      self.thread_marshaller = ThreadMarshaller.new(io)
+    end
+
     def forked_handle_file(file)
       self.game = Marshal.load(file)
       self.ddt = DoubleDummyTricks.new(game.supplemental_sections[
@@ -42,10 +51,11 @@ module BridgeStats
     end
 
     def unforked_handle_pipe_reader(reader)
-      result = reader.gets.chomp.split(';')
-      puts result[0]
-      player_satisfying[result[1]] += 1
-      partner_satisfying[result[2]] += 1
+      self.thread_marshaller = ThreadMarshaller.new(reader) if thread_marshaller.nil?
+      thread_marshaller.unmarshal(reader)
+      puts thread_marshaller.board_data
+      player_satisfying[thread_marshaller.player_best_minimal_contracts] += 1
+      partner_satisfying[thread_marshaller.partner_best_minimal_contracts] += 1
     end
 
     def print_sat_boards(whom)
@@ -64,15 +74,19 @@ module BridgeStats
     end
 
     def hypothesize(player, partner, suit)
+      partnership = player == :n ? :ns : :ew
+      self.board = game.board
+      self.suit = suit
+      self.partnership_hcp = deal.hcp(partnership)
       player_length = deal.hand(player).suit_length(suit)
       partner_length = deal.hand(partner).suit_length(suit)
-      fit = player_length + partner_length
+      self.fit = player_length + partner_length
       return unless fit >= 9
-      spade_fit = deal.hand(player).suit_length(:s) + deal.hand(partner).suit_length(:s)
+      self.spade_fit = deal.hand(player).suit_length(:s) + deal.hand(partner).suit_length(:s)
       return unless spade_fit < 8
-      heart_fit = deal.hand(player).suit_length(:h) + deal.hand(partner).suit_length(:h)
+      self.heart_fit = deal.hand(player).suit_length(:h) + deal.hand(partner).suit_length(:h)
       return unless heart_fit < 8
-      point_count_dir = if player_length > partner_length
+      self.point_count_dir = if player_length > partner_length
                           player
                         elsif partner_length > player_length
                           partner
@@ -81,22 +95,17 @@ module BridgeStats
                         else
                           partner
                         end
-      total_points = deal.total_partnership_points(point_count_dir, suit)
-      return unless total_points >= 23
-      return unless total_points <= 29
-      partnership_balanced = deal.hand(player).balanced && deal.hand(partner).balanced
-      return if partnership_balanced
-      partnership = player == :n ? :ns : :ew
-      unstopped_suits = deal.unstopped_suit_count(partnership)
-      return unless unstopped_suits > 0
+      self.partnership_total_points = deal.total_partnership_points(point_count_dir, suit)
+      return unless partnership_total_points >= 23
+      return unless partnership_total_points <= 29
+      self.is_partnership_balanced = deal.hand(player).balanced && deal.hand(partner).balanced
+      return if is_partnership_balanced
+      self.unstopped_suit_count = deal.unstopped_suit_count(partnership)
+      return unless unstopped_suit_count > 0
 
-      player_best_minimal_contracts = ddt.best_minimal_contracts(player).to_a.sort.join(',')
-      partner_best_minimal_contracts = ddt.best_minimal_contracts(partner).to_a.sort.join(',')
-      count_writer.printf "#{game.board}\t#{suit}\t#{point_count_dir}\t#{deal.hcp(partnership)}\t#{total_points}\t" \
-             "#{fit}\t#{spade_fit}\t#{heart_fit}\t#{partnership_balanced}\t#{unstopped_suits}\t#{player_best_minimal_contracts}\t" \
-             "#{partner_best_minimal_contracts};"
-      count_writer.printf "#{player_best_minimal_contracts};"
-      count_writer.printf "#{partner_best_minimal_contracts}\n"
+      self.player_best_minimal_contracts = ddt.best_minimal_contracts(player).to_a.sort.join(',')
+      self.partner_best_minimal_contracts = ddt.best_minimal_contracts(partner).to_a.sort.join(',')
+      thread_marshaller.marshal(self)
     end
   end
 end
