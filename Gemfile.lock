@@ -8,6 +8,7 @@ GEM
     i18n (0.7.0)
     json (2.1.0)
     method_source (0.9.0)
+    parallel (1.12.1)
     portable_bridge_notation (0.1.0)
       activesupport-inflector (~> 0)
       i18n (~> 0)
@@ -38,6 +39,7 @@ PLATFORMS
   ruby
 
 DEPENDENCIES
+  parallel
   portable_bridge_notation
   pry
   rb-readline

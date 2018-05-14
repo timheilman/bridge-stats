@@ -1,5 +1,5 @@
 require 'portable_bridge_notation'
-require_relative 'parallelizer'
+require 'parallel'
 require_relative 'thread_marshaller'
 require 'pp'
 module BridgeStats
@@ -18,16 +18,22 @@ module BridgeStats
                   :player_best_minimal_contracts, :partner_best_minimal_contracts
 
     def initialize
-      @player_satisfying = Hash.new { |h, k| h[k] = 0 }
-      @partner_satisfying = Hash.new { |h, k| h[k] = 0 }
+      @player_satisfying = Hash.new {|h, k| h[k] = 0}
+      @partner_satisfying = Hash.new {|h, k| h[k] = 0}
       @matching_boards = ''
+      @thread_marshaller = ThreadMarshaller.new
       puts "board\tsuit\tpoint count dir\thcp\ttotal points\t" \
              "fit\tspade fit\theart fit\teach partner is balanced?\tunstopped suits\tplayer best minimal contracts\t" \
              "partner best minimal contracts\n"
       file_name_prefix = '/Users/tim/BackedUpToMacMini/GTD/DIGITAL_REFERENCE/BRIDGE/20000_pbn_games/fourways-20000-'
-      parallelizer = Parallelizer.new(Array.new(4) { |n| File.open("#{file_name_prefix}#{n+1}.rbmarshal") },
-                                      method(:forked_handle_file), method(:count_writer=))
-      parallelizer.run(&method(:unforked_handle_pipe_reader))
+
+      Parallel.map(Array.new(4) {|n| File.open("#{file_name_prefix}#{n + 1}.rbmarshal")}) do |file|
+        forked_handle_file(file)
+      end.each do |marshalled_elements|
+        marshalled_elements.each do |marshalled_element|
+          unforked_handle_pipe_reader(marshalled_element)
+        end
+      end
 
       puts "\n\n\nPlayer (N or E) Satisfying Boards:"
       print_sat_boards player_satisfying
@@ -35,24 +41,27 @@ module BridgeStats
       print_sat_boards partner_satisfying
     end
 
-    def count_writer=(io)
-      self.thread_marshaller = ThreadMarshaller.new(io)
-    end
-
     def forked_handle_file(file)
-      self.game = Marshal.load(file)
-      self.ddt = DoubleDummyTricks.new(game.supplemental_sections[
-                                           :DoubleDummyTricks].tag_value)
-      self.deal = Deal.new(game.deal)
-      hypothesize(:e, :w, :c)
-      hypothesize(:e, :w, :d)
-      hypothesize(:n, :s, :c)
-      hypothesize(:n, :s, :d)
+      results = []
+      until (file.eof?) do
+        self.game = Marshal.load(file)
+        self.ddt = DoubleDummyTricks.new(game.supplemental_sections[
+                                             :DoubleDummyTricks].tag_value)
+        self.deal = Deal.new(game.deal)
+        res = hypothesize(:e, :w, :c)
+        results << res unless res.nil?
+        res = hypothesize(:e, :w, :d)
+        results << res unless res.nil?
+        res = hypothesize(:n, :s, :c)
+        results << res unless res.nil?
+        res = hypothesize(:n, :s, :d)
+        results << res unless res.nil?
+      end
+      results
     end
 
-    def unforked_handle_pipe_reader(reader)
-      self.thread_marshaller = ThreadMarshaller.new(reader) if thread_marshaller.nil?
-      thread_marshaller.unmarshal(reader)
+    def unforked_handle_pipe_reader(string)
+      thread_marshaller.unmarshal(string)
       puts thread_marshaller.board_data
       player_satisfying[thread_marshaller.player_best_minimal_contracts] += 1
       partner_satisfying[thread_marshaller.partner_best_minimal_contracts] += 1
@@ -60,15 +69,15 @@ module BridgeStats
 
     def print_sat_boards(whom)
       puts "count\tproportion\tbest minimal contract(s)\n"
-      total = whom.values.inject(0) { |ttl, count_of_boards| ttl + count_of_boards }
-      individual_chance_of_bestness = Hash.new { |h, k| h[k] = 0 }
-      whom.sort_by { |_k, v| v }.reverse.each do |contracts, count_of_boards|
+      total = whom.values.inject(0) {|ttl, count_of_boards| ttl + count_of_boards}
+      individual_chance_of_bestness = Hash.new {|h, k| h[k] = 0}
+      whom.sort_by {|_k, v| v}.reverse.each do |contracts, count_of_boards|
         set_proportion = count_of_boards / total.to_f
         puts "#{count_of_boards}\t#{'%0.3f' % set_proportion}\t#{contracts}\n"
-        contracts.split(',').each { |i| individual_chance_of_bestness[i] += set_proportion }
+        contracts.split(',').each {|i| individual_chance_of_bestness[i] += set_proportion}
       end
       puts "\nindividual contract\tchance it is a best minimal contract"
-      individual_chance_of_bestness.sort_by { |_k, v| v }.reverse.each do |individual, chance|
+      individual_chance_of_bestness.sort_by {|_k, v| v}.reverse.each do |individual, chance|
         puts "#{individual}\t#{'%0.3f' % chance}"
       end
     end
@@ -87,14 +96,14 @@ module BridgeStats
       self.heart_fit = deal.hand(player).suit_length(:h) + deal.hand(partner).suit_length(:h)
       return unless heart_fit < 8
       self.point_count_dir = if player_length > partner_length
-                          player
-                        elsif partner_length > player_length
-                          partner
-                        elsif deal.total_partnership_points(player, suit) > deal.total_partnership_points(partner, suit)
-                          player
-                        else
-                          partner
-                        end
+                               player
+                             elsif partner_length > player_length
+                               partner
+                             elsif deal.total_partnership_points(player, suit) > deal.total_partnership_points(partner, suit)
+                               player
+                             else
+                               partner
+                             end
       self.partnership_total_points = deal.total_partnership_points(point_count_dir, suit)
       return unless partnership_total_points >= 23
       return unless partnership_total_points <= 29
