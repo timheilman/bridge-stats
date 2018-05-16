@@ -8,10 +8,10 @@ module BridgeStats
     end
 
     def suit
-      :d
+      :c
     end
 
-    def satisfy_experiment?
+    def satisfy_experiment?(dealer)
       deal = Deal.new(game.deal)
       partnership = deal.partnership(dealer)
 
@@ -39,13 +39,13 @@ module BridgeStats
       "best minimal contracts\n"
     end
 
-    def board_excel_record
+    def board_excel_record(dealer)
       deal = Deal.new(game.deal)
       partnership = deal.partnership(dealer)
 
       "#{game.board}\t"\
       "#{dealer}\t"\
-      "c\t"\
+      "#{suit}\t"\
       "#{deal.point_count_dir(partnership, suit)}\t"\
       "#{deal.hcp(partnership)}\t"\
       "#{deal.total_partnership_points(partnership, suit)}\t"\
@@ -54,14 +54,10 @@ module BridgeStats
       "#{deal.fit(partnership, :h)}\t"\
       "#{deal.balanced?(dealer) && deal.balanced?(deal.partner(dealer))}\t"\
       "#{deal.unstopped_suit_count(partnership)}\t"\
-      "#{best_minimal_contracts}\n"\
+      "#{best_minimal_contracts(dealer)}\n"\
     end
 
-    def dealer
-      game.dealer.downcase.to_sym
-    end
-
-    def best_minimal_contracts
+    def best_minimal_contracts(dealer)
       ddt = DoubleDummyTricks.new(game.supplemental_sections[:DoubleDummyTricks].tag_value)
       ddt.best_minimal_contracts(dealer).to_a.sort.join(',')
     end

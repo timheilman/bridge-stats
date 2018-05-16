@@ -15,8 +15,8 @@ module BridgeStats
       Parallel.map(Array.new(4) {|n| File.open("#{file_name_prefix}#{n + 1}.rbmarshal")}) do |file|
         forked_handle_file(file)
       end.each do |satisfying_board_stats_array|
-        satisfying_board_stats_array.each do |satisfying_board_stats|
-          handle_satisfying_board_stats(satisfying_board_stats)
+        satisfying_board_stats_array.each do |satisfying_board_stats_and_dir|
+          handle_satisfying_board_stats(satisfying_board_stats_and_dir)
         end
       end
 
@@ -30,25 +30,18 @@ module BridgeStats
       results = []
       until file.eof?
         # intent: we want to ignore the actual dealer and consider all four options for each board
-        games = {}
-        games[:n] = Marshal.load(file)
-        games[:n].dealer = 'N'
-        [:e, :s, :w].each do |dir|
-          games[dir] = Marshal.load(Marshal.dump(games[:n])) # poor-man's deep copy
-          games[dir].dealer = dir.to_s.upcase
-        end
-        games.each_value do |game|
-          board_stats = BoardStats.new(game)
-          results << board_stats if board_stats.satisfy_experiment?
+        board_stats = BoardStats.new(Marshal.load(file))
+        [:n, :e, :s, :w].each do |dir|
+          results << [board_stats, dir] if board_stats.satisfy_experiment?(dir)
         end
       end
       results
     end
 
-    def handle_satisfying_board_stats(satisfying_board_stats)
-      puts satisfying_board_stats.board_excel_record
-      dealer = satisfying_board_stats.dealer
-      satisfying_best_minimal_contracts[dealer][satisfying_board_stats.best_minimal_contracts] += 1
+    def handle_satisfying_board_stats(satisfying_board_stats_and_dir)
+      dealer = satisfying_board_stats_and_dir[1]
+      puts satisfying_board_stats_and_dir[0].board_excel_record(dealer)
+      satisfying_best_minimal_contracts[dealer][satisfying_board_stats_and_dir[0].best_minimal_contracts(dealer)] += 1
     end
 
     def print_sat_boards(whom)
