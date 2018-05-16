@@ -4,4 +4,5 @@ module BridgeStats
   autoload :Deal, File.expand_path('../bridge_stats/deal', __FILE__)
   autoload :Hand, File.expand_path('../bridge_stats/hand', __FILE__)
   autoload :DoubleDummyTricks, File.expand_path('../bridge_stats/double_dummy_tricks', __FILE__)
+  autoload :CachingWrapper, File.expand_path('../bridge_stats/caching_wrapper', __FILE__)
 end

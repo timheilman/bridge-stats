@@ -40,8 +40,9 @@ module BridgeStats
 
     def handle_satisfying_board_stats(satisfying_board_stats_and_dir)
       dealer = satisfying_board_stats_and_dir[1]
-      puts satisfying_board_stats_and_dir[0].board_excel_record(dealer)
-      satisfying_best_minimal_contracts[dealer][satisfying_board_stats_and_dir[0].best_minimal_contracts(dealer)] += 1
+      board_stats = satisfying_board_stats_and_dir[0]
+      puts board_stats.board_excel_record(dealer)
+      satisfying_best_minimal_contracts[dealer][board_stats.best_minimal_contracts(dealer)] += 1
     end
 
     def print_sat_boards(whom)

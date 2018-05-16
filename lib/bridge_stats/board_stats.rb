@@ -1,10 +1,12 @@
 module BridgeStats
   class BoardStats
     SUITS = [:c, :d, :h, :s]
-    attr_accessor :game
+    attr_reader :deal, :ddt, :board
 
     def initialize(game)
-      @game = game
+      @deal = CachingWrapper.new(Deal.new(game.deal))
+      @ddt = CachingWrapper.new(DoubleDummyTricks.new(game.supplemental_sections[:DoubleDummyTricks].tag_value))
+      @board = game.board
     end
 
     def suit
@@ -12,7 +14,6 @@ module BridgeStats
     end
 
     def satisfy_experiment?(dealer)
-      deal = Deal.new(game.deal)
       partnership = deal.partnership(dealer)
 
       return false if deal.fit(partnership, suit) < 9
@@ -40,10 +41,9 @@ module BridgeStats
     end
 
     def board_excel_record(dealer)
-      deal = Deal.new(game.deal)
       partnership = deal.partnership(dealer)
 
-      "#{game.board}\t"\
+      "#{board}\t"\
       "#{dealer}\t"\
       "#{suit}\t"\
       "#{deal.point_count_dir(partnership, suit)}\t"\
@@ -58,7 +58,6 @@ module BridgeStats
     end
 
     def best_minimal_contracts(dealer)
-      ddt = DoubleDummyTricks.new(game.supplemental_sections[:DoubleDummyTricks].tag_value)
       ddt.best_minimal_contracts(dealer).to_a.sort.join(',')
     end
 
