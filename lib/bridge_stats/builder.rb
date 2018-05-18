@@ -8,7 +8,7 @@ module BridgeStats
     attr_reader :satisfying_best_minimal_contracts
 
     def initialize
-      @satisfying_best_minimal_contracts = Hash.new {|h, k| h[k] = Hash.new {|h1, k1| h1[k1] = 0}}
+      @satisfying_best_minimal_contracts =  Hash.new {|h1, k1| h1[k1] = 0}
       puts BoardStats.excel_header
       file_name_prefix = '/Users/tim/BackedUpToMacMini/GTD/DIGITAL_REFERENCE/BRIDGE/20000_pbn_games/fourways-20000-'
 
@@ -20,10 +20,7 @@ module BridgeStats
         end
       end
 
-      [:n, :e, :s, :w].each do |dir|
-        puts "\n\n\n#{dir.to_s.upcase} Satisfying Boards:"
-        print_sat_boards satisfying_best_minimal_contracts[dir]
-      end
+      print_sat_boards
     end
 
     def forked_handle_file(file)
@@ -42,14 +39,15 @@ module BridgeStats
       dealer = satisfying_board_stats_and_dir[1]
       board_stats = satisfying_board_stats_and_dir[0]
       puts board_stats.board_excel_record(dealer)
-      satisfying_best_minimal_contracts[dealer][board_stats.best_minimal_contracts(dealer)] += 1
+      satisfying_best_minimal_contracts[board_stats.best_minimal_contracts(dealer)] += 1
     end
 
-    def print_sat_boards(whom)
+    def print_sat_boards
+      puts "\n\n\n Satisfying Boards:"
       puts "count\tproportion\tbest minimal contract(s)\n"
-      total = whom.values.inject(0) {|ttl, count_of_boards| ttl + count_of_boards}
+      total = satisfying_best_minimal_contracts.values.inject(0) {|ttl, count_of_boards| ttl + count_of_boards}
       individual_chance_of_bestness = Hash.new {|h, k| h[k] = 0}
-      whom.sort_by {|_k, v| v}.reverse.each do |contracts, count_of_boards|
+      satisfying_best_minimal_contracts.sort_by {|_k, v| v}.reverse.each do |contracts, count_of_boards|
         set_proportion = count_of_boards / total.to_f
         puts "#{count_of_boards}\t#{'%0.3f' % set_proportion}\t#{contracts}\n"
         contracts.split(',').each {|i| individual_chance_of_bestness[i] += set_proportion}
